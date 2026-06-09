@@ -1,4 +1,5 @@
 import streamlit as st
+import re
 from bs4 import BeautifulSoup
 
 def transform_bible_html(raw_html: str) -> str:
@@ -33,7 +34,7 @@ def transform_bible_html(raw_html: str) -> str:
             
             # Insert a space at the front of the <li> element (space will not be bolded)
             li_tag.insert(0, " ")
-            
+
             # Safely insert the number tag at the absolute front of the <li> element
             li_tag.insert(0, num_tag)
             
@@ -42,6 +43,40 @@ def transform_bible_html(raw_html: str) -> str:
             
     # Return the modified tree back as a clean string
     return str(soup)
+
+def apply_verse_numbering_and_list_conversion(content: str) -> str:
+    """
+    Applies exactly the three required changes from BOS Prompt #8:
+    1. Add bold verse numbers at the start of every <li> verse content
+       (with exactly one space after </strong>)
+    2. Convert all <ol start="N"> to <ul class="verse-list">
+    3. Convert all </ol> to </ul>
+    No other modifications are made.
+    """
+    # Change 2 + 3: Convert ordered lists to unordered lists with the verse-list class
+    # Remove any start="X" attribute in the process
+    content = re.sub(r'<ol start="\d+">', '<ul class="verse-list">', content)
+    content = content.replace('</ol>', '</ul>')
+
+    # Change 1: Add verse numbers
+    verse_counter = [1]   # list so it is mutable inside the nested function
+
+    def insert_verse_number(match: re.Match) -> str:
+        num = verse_counter[0]
+        verse_counter[0] += 1
+        # Insert exactly: <strong>N</strong> + one space + original content
+        return f"{match.group(1)}<strong>{num}</strong> {match.group(2)}{match.group(3)}"
+
+    # Match every <li>...</li> and number its content
+    # Using DOTALL in case any future verse spans lines (current files are single-line)
+    content = re.sub(
+        r'(<li>)(.*?)(</li>)',
+        insert_verse_number,
+        content,
+        flags=re.DOTALL
+    )
+
+    return content
 
 # -- STREAMLIT UI LAYOUT --
 st.set_page_config(page_title="Bible HTML Normalizer", layout="wide")
@@ -58,7 +93,10 @@ with col1:
 if user_input:
     # Run HTML parser function
     processed_output = transform_bible_html(user_input)
+    processed_output2 = apply_verse_numbering_and_list_conversion(user_input)
     
     with col2:
         st.subheader("Processed Output Text")
         st.text_area("Copy your modified text here:", value=processed_output, height=450)
+        st.subheader("Grok Function Output Text")
+        st.text_area("Copy your modified text here:", value=processed_output2, height=450)
