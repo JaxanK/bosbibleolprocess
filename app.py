@@ -26,11 +26,11 @@ def transform_bible_html(raw_html: str) -> str:
         # 2. Iterate through each list item inside this list
         for li_tag in ol_tag.find_all("li", recursive=False):
             # Transform the list item to <li class="verse">
-            li_tag["class"] = "verse"
+            #li_tag["class"] = "verse"
             
-            # Create a brand new <strong> tag for our verse counter
-            num_tag = soup.new_tag("strong")
-            num_tag["class"] = "verse-num"
+            # Create a brand new <span> tag for our verse counter
+            num_tag = soup.new_tag("span")
+            num_tag["class"] = "vn"
             num_tag.string = f"{current_verse_num}"
             
             # Insert a space at the front of the <li> element (space will not be bolded)
