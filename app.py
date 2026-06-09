@@ -30,6 +30,7 @@ def transform_bible_html(raw_html: str) -> str:
             
             # Create a brand new <strong> tag for our verse counter
             num_tag = soup.new_tag("strong")
+            num_tag["class"] = "verse-num"
             num_tag.string = f"{current_verse_num}"
             
             # Insert a space at the front of the <li> element (space will not be bolded)
